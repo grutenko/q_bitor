@@ -102,6 +102,26 @@ void test_dict_get( void )
 
     TEST_ASSERT_EQUAL_INT(number, *((int *)item->value) );
     TEST_ASSERT_EQUAL_INT(BN_INT32, item->type);
+    TEST_ASSERT_FALSE(bn_dict_key_exist(dict, "undefined-key"));
+    TEST_ASSERT_TRUE(bn_dict_key_exist(dict, "test_item"));
+}
+
+void test_get_r( void )
+{
+    bn_dict_t *dict = bn_create_dict();
+    bn_dict_t *inner_dict = bn_create_dict();
+
+    int number = 24;
+
+    bn_add_to_dict(&inner_dict, BN_INT32, "test_item", &number);
+    bn_add_to_dict(&dict, BN_DICTIONARY, "root", inner_dict);
+
+    bn_t *bn = bn_create(BN_DICTIONARY, dict);
+
+    bn_dict_item_t *item = bn_get(bn, "root.test_item");
+
+    TEST_ASSERT_EQUAL_INT(BN_INT32, item->type);
+    TEST_ASSERT_EQUAL_INT32(number, *(int *)item->value);
 }
 
 

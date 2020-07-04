@@ -1,6 +1,7 @@
 #ifndef B_ENCODING_H
 #define B_ENCODING_H
 
+#include <stdbool.h>
 #include <search.h>
 
 enum BN_TYPE
@@ -65,8 +66,14 @@ void bn_add( bn_t* bn, enum BN_TYPE type, void* item);
 int bn_add_to_list(bn_list_t* last_item, enum BN_TYPE type, void* item);
 int bn_list_len(bn_list_t* list);
 
+
 int bn_add_to_dict(bn_dict_t** dict, enum BN_TYPE type, const char* key, void* value);
 bn_dict_item_t* bn_get_from_dict(bn_dict_t** dict, const char* key);
+bool bn_dict_key_exist(bn_dict_t *dict, const char *key);
+
+bn_list_item_t *bn_get_from_list(bn_list_t *list, unsigned int indx);
+bn_dict_item_t *bn_get(bn_t *bn, const char *path);
+bn_dict_item_t *bn_get_r(bn_dict_t *dict, const char *path);
 
 void bn_free(bn_t* bn);
 void bn_free_entity(enum BN_TYPE type, void* value);

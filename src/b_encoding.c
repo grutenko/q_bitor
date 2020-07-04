@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include <stdbool.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -85,6 +86,23 @@ int bn_list_len(bn_list_t* list)
     return count;
 }
 
+bn_list_item_t *bn_get_from_list(bn_list_t *list, unsigned int indx)
+{
+    if(indx >= bn_list_len(list))
+    {
+        return NULL;
+    }
+    unsigned int current = 0;
+    bn_list_item_t* cursor = list->first;
+    do
+    {
+        cursor = cursor->next;
+        current++;
+    } while (indx > current);
+    
+    return cursor;
+}
+
 /** ------------------------------------------------------------------------------------------------------------
  *                                           DICTIONARY
  *  ------------------------------------------------------------------------------------------------------------ */
@@ -132,7 +150,56 @@ bn_dict_item_t* bn_get_from_dict(bn_dict_t** dict, const char* key)
     void *item = tfind(find_a, (void **)dict, __key_compare);
     free(find_a);
 
+    if(item == NULL)
+    {
+        return NULL;
+    }
+
     return *(bn_dict_item_t **)item;
+}
+
+/** ------------------------------------------------------------------------------------------------------------
+ *                                           MANAGE
+ *  ------------------------------------------------------------------------------------------------------------ */
+
+bool bn_dict_key_exist(bn_dict_t *dict, const char *key)
+{
+    return bn_get_from_dict(&dict, key) != NULL;
+}
+
+bn_dict_item_t *bn_get(bn_t *bn, const char *path)
+{
+    if(bn == NULL || bn->type != BN_DICTIONARY)
+    {
+        return NULL;
+    }
+    return bn_get_r((bn_dict_t *)bn->value, path);
+}
+
+bn_dict_item_t *bn_get_r(bn_dict_t *dict, const char *path)
+{
+    if(dict == NULL)
+    {
+        return NULL;
+    }
+
+    char *point = strstr(path, ".");
+    if(point == NULL)
+    {
+        return bn_get_from_dict(&dict, path);
+    }
+    
+    char key[ point - path + 1];
+    strncpy(key, path, point - path);
+    key[point - path] = '\0';
+
+    bn_dict_item_t *dict_item = bn_get_from_dict(&dict, key);
+    if(dict_item == NULL || dict_item->type != BN_DICTIONARY)
+    {
+        return NULL;
+    }
+
+    return bn_get_r((bn_dict_t *)dict_item->value, point + 1);  
 }
 
 /** ------------------------------------------------------------------------------------------------------------
@@ -226,7 +293,6 @@ bn_t *bn_decode(char *s)
     enum BN_TYPE type = bn_determine_type(s);
     if(type == BN_INVALID)
     {
-        fprintf(stderr, "%s (%c%c%c)\n", "Invalid type.", *s, *(s+1), *(s+2));
         return NULL;
     }
     
@@ -234,7 +300,6 @@ bn_t *bn_decode(char *s)
     void *value = bn_decode_entity(type, s, &p);
     if(value == NULL)
     {
-        fprintf(stderr, "%s Offset: %ld\n", "Error parsing bencoding.", p-s);
         return NULL;
     }
     return bn_create(type, value);
@@ -291,14 +356,12 @@ char *bn_decode_string(char *s, char **p)
 
     if(strstr(s, ":") != e)
     {
-        fprintf(stderr, "%s line: %i %c\n", "Undefinded \":\". ", __LINE__, *e);
         return NULL;
     }
 
     char *d = calloc(l+1, sizeof(char));
     if(!d)
     {
-        fprintf(stderr, "%s %li line: %i\n", "Cannot allocate:", (l+1)*sizeof(char), __LINE__);
         return NULL;
     }
     memcpy(d, e+1, l);
@@ -368,7 +431,6 @@ bn_list_t *bn_decode_list(char *s, char **p)
     bn_list_t *list = bn_create_list();
     if(!list)
     {
-        fprintf(stderr, "%s %i\n", "Cannot create list.", __LINE__);
         return NULL;
     }
     void *value;
@@ -384,26 +446,22 @@ bn_list_t *bn_decode_list(char *s, char **p)
         if(type == BN_INVALID)
         {
             bn_free_list(list);
-            fprintf(stderr, "%s %i\n", "Cannot parse type.", __LINE__);
             return NULL;
         }
         value = bn_decode_entity(type, s, p);
         if(value == NULL)
         {
             bn_free_list(list);
-            fprintf(stderr, "%s - %i line: %i\n", "Error parse children value.", type, __LINE__);
             return NULL;
         }
         if(!bn_add_to_list(list, type, value))
         {
             bn_free_list(list);
-            fprintf(stderr, "%s %i\n", "Cannot add to list.", __LINE__);
             return NULL;
         }
         if(s == *p)
         {
             bn_free_list(list);
-            fprintf(stderr, "%s %i\n", "Unknown Error.", __LINE__);
             return NULL;
         }
 
@@ -431,7 +489,6 @@ bn_dict_t *bn_decode_dict(char *s, char **p)
         if(type == BN_INVALID)
         {
             bn_free_dict(dict);
-            fprintf(stderr, "%s %i\n", "Invalid type.", __LINE__);
             return NULL;
         }
 
@@ -440,14 +497,12 @@ bn_dict_t *bn_decode_dict(char *s, char **p)
             if(type != BN_STRING)
             {
                 bn_free_dict(dict);
-                fprintf(stderr, "%s %i %i\n", "Key must be a string type. ", type, __LINE__);
                 return NULL;
             }
             key = bn_decode_string(s, p);
             if(key == NULL)
             {
                 bn_free_dict(dict);
-                fprintf(stderr, "%s %i\n", "Key decode error.", __LINE__);
                 return NULL;
             }
         }
@@ -458,14 +513,12 @@ bn_dict_t *bn_decode_dict(char *s, char **p)
             {
                 free(key);
                 bn_free_dict(dict);
-                fprintf(stderr, "%s %i\n", "Children is invalid.", __LINE__);
                 return NULL;
             }
             if(!bn_add_to_dict(&dict, type, key, value))
             {
                 free(key);
                 bn_free_dict(dict);
-                fprintf(stderr, "%s %i\n", "Cannot add to dict.", __LINE__);
                 return NULL;
             }
             key = NULL;
@@ -474,7 +527,6 @@ bn_dict_t *bn_decode_dict(char *s, char **p)
         if(s == *p)
         {
             bn_free_dict(dict);
-            fprintf(stderr, "%s %i\n", "Unknown dict error.", __LINE__);
             return NULL;
         }
 
