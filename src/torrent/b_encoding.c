@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <stdlib.h>
-#include "q_bitor/b_encoding.h"
+#include "q_bitor/torrent/b_encoding.h"
 
 /**
  * Добавляет в конец новый элемент.

@@ -1,7 +1,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <malloc.h>
-#include "q_bitor/torrent_file.h"
+#include "q_bitor/torrent/torrent_file.h"
 
 bn_t *tr_decode_file(const char *path)
 {

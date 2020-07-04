@@ -1,7 +1,7 @@
 #include <ceedling/unity.h>
 #include <malloc.h>
-#include <q_bitor/b_encoding.h>
-#include <q_bitor/torrent_file.h>
+#include <q_bitor/torrent/b_encoding.h>
+#include <q_bitor/torrent/torrent_file.h>
 
 void setUp(void)
 {
