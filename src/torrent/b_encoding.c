@@ -280,6 +280,31 @@ void __deputy(void *dict) {}
  *                                           DECODE
  *  ------------------------------------------------------------------------------------------------------------ */
 
+bn_t *bn_decode_from_file(const char *file_path)
+{
+    FILE *f = fopen(file_path, "rb");
+    if(!f)
+    {
+        return NULL;
+    }
+
+    signed long int size;
+
+    fseek(f, 0L, SEEK_END);
+    size = ftell(f);
+    rewind(f);
+
+    char data[size + 1];
+
+    fread(data, 1, size, f);
+    data[size] = '\0';
+
+    fclose(f);
+    bn_t *bn = bn_decode(data);
+
+    return bn;
+}
+
 bn_t *bn_decode(char *s)
 {
     enum BN_TYPE type = bn_determine_type(s);

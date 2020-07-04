@@ -83,6 +83,7 @@ void bn_free_dict(bn_dict_t *dict);
 void __deputy(void *dict);
 void bn_free_bstring(bstring_t *bs);
 
+bn_t *bn_decode_from_file(const char *file_path);
 long int bn_decode_int32(char *s, char **p);
 double bn_decode_double(char *s, char **p);
 char *bn_decode_string(char *s, char **p);
