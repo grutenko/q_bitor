@@ -80,6 +80,7 @@ void bn_free_entity(enum BN_TYPE type, void* value);
 void bn_free_list(bn_list_t* list);
 void r_free_list_items(bn_list_item_t *list_item);
 void bn_free_dict(bn_dict_t *dict);
+void __deputy(void *dict);
 void bn_free_bstring(bstring_t *bs);
 
 long int bn_decode_int32(char *s, char **p);

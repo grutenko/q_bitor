@@ -271,18 +271,10 @@ void bn_free_dict(bn_dict_t *dict)
         return;
     }
 
-    if (dict->llink == NULL)
-    {
-        bn_free_dict(dict->llink);
-    }
-	if (dict->rlink == NULL)
-    {
-        bn_free_dict(dict->rlink);
-    }
-
-    bn_free_entity(((bn_dict_item_t *)dict)->type, ((bn_dict_item_t *)dict)->value); 
-    free(dict);
+    tdestroy(dict, __deputy);
 }
+
+void __deputy(void *dict) {}
 
 /** ------------------------------------------------------------------------------------------------------------
  *                                           DECODE
