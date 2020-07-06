@@ -1,0 +1,1 @@
+add_library(core ipc.c b_encoding.c ipc.c db.c)

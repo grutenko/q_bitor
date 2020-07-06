@@ -6,11 +6,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <stdlib.h>
-#include "q_bitor/torrent/b_encoding.h"
-
-#define ERR_DECODE_LIST(l) { bn_free_list((l)); return NULL; }
-#define ERR_DECODE_DICT(d) { bn_free_dict((d)); return NULL; }
-#define ERR_DECODE_DICT_WITH_KEY(k, d) { free((k)); bn_free_dict((d)); return NULL; }
+#include "b_encoding.h"
 
 /**
  * Добавляет в конец новый элемент.
@@ -28,9 +24,9 @@ bn_t* bn_create(enum BN_TYPE type, void* item)
     return bn;
 }
 
-/** ------------------------------------------------------------------------------------------------------------
+/** ------------------------------------------------------------------------------------------------
  *                                           LIST
- *  ------------------------------------------------------------------------------------------------------------ */
+ *  --------------------------------------------------------------------------------------------- */
 
 bn_list_t* bn_create_list( void )
 {
@@ -107,9 +103,9 @@ bn_list_item_t *bn_get_from_list(bn_list_t *list, unsigned int indx)
     return cursor;
 }
 
-/** ------------------------------------------------------------------------------------------------------------
+/** ------------------------------------------------------------------------------------------------
  *                                           DICTIONARY
- *  ------------------------------------------------------------------------------------------------------------ */
+ *  --------------------------------------------------------------------------------------------- */
 
 /**
  * Создает новый пустой словарь.
@@ -162,9 +158,9 @@ bn_dict_item_t* bn_get_from_dict(bn_dict_t** dict, const char* key)
     return *(bn_dict_item_t **)item;
 }
 
-/** ------------------------------------------------------------------------------------------------------------
+/** ------------------------------------------------------------------------------------------------
  *                                           MANAGE
- *  ------------------------------------------------------------------------------------------------------------ */
+ *  ------------------------------------------------------------------------------------------------ */
 
 bool bn_dict_key_exist(bn_dict_t *dict, const char *key)
 {
@@ -280,9 +276,9 @@ void bn_free_dict(bn_dict_t *dict)
 
 void __deputy(void *dict) {}
 
-/** ------------------------------------------------------------------------------------------------------------
+/** ------------------------------------------------------------------------------------------------
  *                                           DECODE
- *  ------------------------------------------------------------------------------------------------------------ */
+ *  --------------------------------------------------------------------------------------------- */
 
 bn_t *bn_decode_from_file(const char *file_path)
 {
@@ -292,7 +288,8 @@ bn_t *bn_decode_from_file(const char *file_path)
         return NULL;
     }
 
-    signed long int size;
+    signed long int size,
+                    real_size;
 
     fseek(f, 0L, SEEK_END);
     size = ftell(f);
@@ -300,8 +297,8 @@ bn_t *bn_decode_from_file(const char *file_path)
 
     char data[size + 1];
 
-    fread(data, 1, size, f);
-    data[size] = '\0';
+    real_size = fread(data, 1, size, f);
+    data[real_size] = '\0';
 
     fclose(f);
     bn_t *bn = bn_decode(data);
@@ -464,13 +461,27 @@ bn_list_t *bn_decode_list(char *s, char **p)
     while( *s != 'e' && s[0] != '\0' )
     {
         type = bn_determine_type(s);
-        if(type == BN_INVALID) ERR_DECODE_LIST(list);
-
+        if(type == BN_INVALID)
+        {
+            bn_free_list(list);
+            return NULL;
+        }
         value = bn_decode_entity(type, s, p);
-        if(value == NULL) ERR_DECODE_LIST(list);
-
-        if(!bn_add_to_list(list, type, value)) ERR_DECODE_LIST(list);
-        if(s == *p) ERR_DECODE_LIST(list);
+        if(value == NULL)
+        {
+            bn_free_list(list);
+            return NULL;
+        }
+        if(!bn_add_to_list(list, type, value))
+        {
+            bn_free_list(list);
+            return NULL;
+        }
+        if(s == *p)
+        {
+            bn_free_list(list);
+            return NULL;
+        }
 
         s = *p;
     }
@@ -493,25 +504,49 @@ bn_dict_t *bn_decode_dict(char *s, char **p)
     while( s[0] != 'e' && s[0] != '\0' )
     {
         type = bn_determine_type(s);
-        if(type == BN_INVALID) ERR_DECODE_DICT(dict);
+        if(type == BN_INVALID)
+        {
+            bn_free_dict(dict);
+            return NULL;
+        }
 
         if(key == NULL)
         {
-            if(type != BN_STRING) ERR_DECODE_DICT(dict);
-
+            if(type != BN_STRING)
+            {
+                bn_free_dict(dict);
+                return NULL;
+            }
             key = bn_decode_string(s, p);
-            if(key == NULL) ERR_DECODE_DICT(dict);
+            if(key == NULL)
+            {
+                bn_free_dict(dict);
+                return NULL;
+            }
         }
         else
         {
             value = bn_decode_entity(type, s, p);
-            if(value == NULL) ERR_DECODE_DICT_WITH_KEY(key, dict);
-
-            if(!bn_add_to_dict(&dict, type, key, value)) ERR_DECODE_DICT_WITH_KEY(key, dict);
+            if(value == NULL)
+            {
+                free(key);
+                bn_free_dict(dict);
+                return NULL;
+            }
+            if(!bn_add_to_dict(&dict, type, key, value))
+            {
+                free(key);
+                bn_free_dict(dict);
+                return NULL;
+            }
             key = NULL;
         }
 
-        if(s == *p) ERR_DECODE_DICT(dict);
+        if(s == *p)
+        {
+            bn_free_dict(dict);
+            return NULL;
+        }
 
         s = *p;
     }

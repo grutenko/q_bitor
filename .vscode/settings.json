@@ -1,7 +1,21 @@
 {
     "files.associations": {
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "cstdlib": "cpp",
+        "*.in": "cpp"
     },
     "editor.fontFamily": "'Anonymous Pro',monospace",
-    "editor.fontSize": 15
+    "editor.fontSize": 15,
+    "editor.rulers": [
+        100
+    ],
+    "sqltools.connections": [
+        {
+            "database": "${workspaceFolder:qbitor}/db.sqlite",
+            "driver": "SQLite",
+            "group": "qbitor",
+            "name": "QBitor",
+            "previewLimit": 50
+        }
+    ]
 }
