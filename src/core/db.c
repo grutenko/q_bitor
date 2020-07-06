@@ -6,7 +6,7 @@
 #include "db.h"
 
 #define CREATE_DB_SQL "PRAGMA foreign_keys = ON;\n" \
-                      "CREATE TABLE IF NOT EXISTS downloads(\n" \
+                      "CREATE TABLE IF NOT EXISTS distributions(\n" \
                       "     id           INTEGER PRIMARY KEY,\n" \
                       "     distrib_name TEXT NOT NULL,\n" \
                       "     piese_length INTEGER NOT NULL,\n" \
